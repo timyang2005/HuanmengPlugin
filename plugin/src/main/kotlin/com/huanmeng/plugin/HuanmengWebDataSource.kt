@@ -88,7 +88,6 @@ class HuanmengWebDataSource : WebBookDataSource {
     override val explorePageProvider: ExplorePageProvider =
         object : ExplorePageProvider.DefaultExplorePageProvider {
 
-            // 定义所有标签页 ID
             override val explorePageIdList: List<String> = listOf(
                 "latest",
                 "ongoing",
@@ -159,14 +158,13 @@ class HuanmengWebDataSource : WebBookDataSource {
 
     override suspend fun getBookInformation(id: String): BookInformation {
         return try {
-            val resp = CxHttp.get<HuanmengResponse<HuanmengBookDetail>>(
-                "$BASE_URL/detail"
-            ) {
+            val resp = CxHttp.get("$BASE_URL/detail") {
                 param("password", PASSWORD)
                 param("id", id)
                 header("User-Agent", UA)
             }.await()
-            resp.data?.toBookInformation() ?: BookInformation.empty(id)
+            val data = resp.body<HuanmengResponse<HuanmengBookDetail>>()
+            data?.data?.toBookInformation() ?: BookInformation.empty(id)
         } catch (e: Exception) {
             BookInformation.empty(id)
         }
@@ -178,16 +176,15 @@ class HuanmengWebDataSource : WebBookDataSource {
 
     override suspend fun getBookVolumes(id: String): BookVolumes {
         return try {
-            val resp = CxHttp.get<HuanmengResponse<HuanmengChapterList>>(
-                "$BASE_URL/chapters"
-            ) {
+            val resp = CxHttp.get("$BASE_URL/chapters") {
                 param("password", PASSWORD)
                 param("id", id)
                 param("size", "5000")
                 header("User-Agent", UA)
             }.await()
+            val data = resp.body<HuanmengResponse<HuanmengChapterList>>()
 
-            val chapters = resp.data?.list ?: return BookVolumes.empty(id)
+            val chapters = data?.data?.list ?: return BookVolumes.empty(id)
 
             // 按 volumeId 分组 — 显式声明类型消除歧义
             val groupMap: MutableMap<Int, Pair<String, MutableList<ChapterInformation>>> = linkedMapOf()
@@ -227,16 +224,15 @@ class HuanmengWebDataSource : WebBookDataSource {
             if (parts.size != 2) return ChapterContent.empty(chapterId)
             val (bid, cid) = parts
 
-            val resp = CxHttp.get<HuanmengResponse<HuanmengContentData>>(
-                "$BASE_URL/content"
-            ) {
+            val resp = CxHttp.get("$BASE_URL/content") {
                 param("password", PASSWORD)
                 param("bid", bid)
                 param("cid", cid)
                 header("User-Agent", UA)
             }.await()
+            val data = resp.body<HuanmengResponse<HuanmengContentData>>()
 
-            val raw = resp.data?.content ?: return ChapterContent.empty(chapterId)
+            val raw = data?.data?.content ?: return ChapterContent.empty(chapterId)
 
             val builder = ContentBuilder()
             parseHtmlContent(raw, builder)
@@ -274,7 +270,6 @@ class HuanmengWebDataSource : WebBookDataSource {
         val remaining = html.substring(lastEnd).cleanHtml()
         if (remaining.isNotBlank()) builder.simpleText(remaining.trim())
 
-        // 如果没有任何内容，放原始文本
         if (builder.components.isEmpty()) {
             builder.simpleText(html.cleanHtml().trim())
         }
@@ -370,9 +365,7 @@ class HuanmengWebDataSource : WebBookDataSource {
         page: Int = 1,
         size: Int = 20
     ): HuanmengBookList? {
-        val resp = CxHttp.get<HuanmengResponse<HuanmengBookList>>(
-            "$BASE_URL/search"
-        ) {
+        val resp = CxHttp.get("$BASE_URL/search") {
             param("password", PASSWORD)
             param("page", page.toString())
             param("size", size.toString())
@@ -380,7 +373,8 @@ class HuanmengWebDataSource : WebBookDataSource {
             if (paramKey != null && paramValue != null) param(paramKey, paramValue)
             header("User-Agent", UA)
         }.await()
-        return resp.data
+        val data = resp.body<HuanmengResponse<HuanmengBookList>>()
+        return data?.data
     }
 }
 
