@@ -390,30 +390,27 @@ private fun HuanmengBookItem.toBookInformation(): BookInformation {
         author = this@toBookInformation.author
         coverUri = Uri.parse(pic)
         description = intro
-        // Tags 通过 toMutableList 转换后添加
-        if (kind.isNotBlank()) {
-            val tagList = kind.split(",", "，", " ").filter { it.isNotBlank() }
-            tags = tagList.toMutableList()
-        }
+        // Tags 暂时禁用 - 等待API文档更新
+        // if (kind.isNotBlank()) {
+        //     kind.split(",", "，", " ").filter { it.isNotBlank() }.forEach { addTag(it) }
+        // }
         wordCount = WordCount(textNum.parseWordCount())
         lastUpdated = updateTime.parseDateTime()
     }
 }
 
 private fun HuanmengBookDetail.toBookInformation(): BookInformation {
-    val detailTags = this.tags  // 先取值，避免 apply 块中 tags 歧义
     return MutableBookInformation.empty().apply {
         id = this@toBookInformation.id.toString()
         title = name
         author = this@toBookInformation.author
         coverUri = Uri.parse(pic)
         description = intro
-        // Tags 通过 toMutableList 转换后赋值
-        val allTags = buildList {
-            if (kind.isNotBlank()) addAll(kind.split(",", "，", " ").filter { it.isNotBlank() })
-            if (detailTags.isNotBlank()) addAll(detailTags.split(",", "，", " ").filter { it.isNotBlank() })
-        }.distinct()
-        tags = allTags.toMutableList()
+        // Tags 暂时禁用 - 等待API文档更新
+        // val allTags = buildList {
+        //     if (kind.isNotBlank()) addAll(kind.split(",", "，", " ").filter { it.isNotBlank() })
+        //     if (tags.isNotBlank()) addAll(tags.split(",", "，", " ").filter { it.isNotBlank() })
+        // }.distinct()
         wordCount = WordCount(textNum.parseWordCount())
         lastUpdated = updateTime.parseDateTime()
         isComplete = state == 2
