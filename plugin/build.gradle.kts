@@ -1,7 +1,9 @@
+import org.gradle.kotlin.dsl.withType
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile
+
 plugins {
     alias(libs.plugins.android.application)
-    // AGP 9.0+ 已内置 kotlin.android，无需再声明
-    // Kotlin 2.0+ 必须显式声明 compose.compiler
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
 }
@@ -17,54 +19,57 @@ android {
         versionCode = 1
         versionName = "1.0.0"
     }
-
     buildFeatures {
         compose = true
         buildConfig = true
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false
         }
     }
-
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
+    }
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
 
-    // AGP 9.0+ 内置 Kotlin，jvmTarget 通过 kotlin DSL 设置
-    kotlin {
-        jvmToolchain(17)
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach {
+            val outputImpl = it as com.android.build.api.variant.impl.VariantOutputImpl
+            val originalFileName = outputImpl.outputFileName.get()
+            val newFileName = originalFileName.replace(".apk", ".apk.lnrp")
+            outputImpl.outputFileName = newFileName
+        }
+    }
+}
+
+tasks.withType<KotlinJvmCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+        freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
     }
 }
 
 dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
-
-    // LightNovelReader Plugin API
-    compileOnly(libs.lightnovelreader.api)
-
-    // Coroutines
     implementation(libs.kotlinx.coroutines.core)
-
-    // Compose
+    implementation(libs.androidx.runtime)
+    implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.androidx.foundation.layout)
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.material3)
-    implementation(libs.androidx.runtime)
-    implementation(libs.androidx.foundation.layout)
-    implementation(libs.androidx.navigation.runtime.ktx)
-
-    // Serialization
     implementation(libs.kotlinx.serialization.json)
-
-    // Network
     implementation(libs.cxhttp)
     implementation(libs.okhttp3.okhttp)
     implementation(libs.okhttp3.logging.interceptor)
-
-    // HTML Parsing
     implementation(libs.jsoup)
+
+    //LNR Api
+    compileOnly(libs.lightnovelreader.api)
 }
