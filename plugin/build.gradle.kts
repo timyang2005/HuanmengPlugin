@@ -1,7 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
-    // AGP 9.0+ 已内置 Kotlin 支持，无需再声明 kotlin.android
-    // AGP 9.0+ 已内置 Compose 编译器，无需再声明 compose.compiler
+    // AGP 9.0+ 已内置 kotlin.android，无需再声明
+    // Kotlin 2.0+ 必须显式声明 compose.compiler
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
 }
 
