@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -48,6 +49,8 @@ private const val BASE_URL = "https://www.huanmengacg.com/index.php/bookapi"
 private const val PASSWORD = "huanmengapi"
 private const val UA =
     "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
+
+private val json = Json { ignoreUnknownKeys = true; coerceInputValues = true }
 
 /**
  * 幻梦轻小说 LNR Web 数据源
@@ -163,8 +166,9 @@ class HuanmengWebDataSource : WebBookDataSource {
                 param("id", id)
                 header("User-Agent", UA)
             }.await()
-            val data = resp.body<HuanmengResponse<HuanmengBookDetail>>()
-            data?.data?.toBookInformation() ?: BookInformation.empty(id)
+            val body = resp.body ?: return BookInformation.empty(id)
+            val data = json.decodeFromString<HuanmengResponse<HuanmengBookDetail>>(body.string())
+            data.data?.toBookInformation() ?: BookInformation.empty(id)
         } catch (e: Exception) {
             BookInformation.empty(id)
         }
@@ -182,11 +186,12 @@ class HuanmengWebDataSource : WebBookDataSource {
                 param("size", "5000")
                 header("User-Agent", UA)
             }.await()
-            val data = resp.body<HuanmengResponse<HuanmengChapterList>>()
+            val body = resp.body ?: return BookVolumes.empty(id)
+            val data = json.decodeFromString<HuanmengResponse<HuanmengChapterList>>(body.string())
 
-            val chapters = data?.data?.list ?: return BookVolumes.empty(id)
+            val chapters = data.data?.list ?: return BookVolumes.empty(id)
 
-            // 按 volumeId 分组 — 显式声明类型消除歧义
+            // 按 volumeId 分组
             val groupMap: MutableMap<Int, Pair<String, MutableList<ChapterInformation>>> = linkedMapOf()
             for (ch in chapters) {
                 val vId = ch.volumeId
@@ -230,9 +235,10 @@ class HuanmengWebDataSource : WebBookDataSource {
                 param("cid", cid)
                 header("User-Agent", UA)
             }.await()
-            val data = resp.body<HuanmengResponse<HuanmengContentData>>()
+            val body = resp.body ?: return ChapterContent.empty(chapterId)
+            val data = json.decodeFromString<HuanmengResponse<HuanmengContentData>>(body.string())
 
-            val raw = data?.data?.content ?: return ChapterContent.empty(chapterId)
+            val raw = data.data?.content ?: return ChapterContent.empty(chapterId)
 
             val builder = ContentBuilder()
             parseHtmlContent(raw, builder)
@@ -250,9 +256,6 @@ class HuanmengWebDataSource : WebBookDataSource {
     // 私有工具方法
     // ================================================================
 
-    /**
-     * 解析 HTML 正文，将文本段和 <img> 交替拆分后加入 builder
-     */
     private fun parseHtmlContent(html: String, builder: ContentBuilder) {
         val imgRegex = Regex("""<img[^>]+src=["']([^"']+)["'][^>]*>""", RegexOption.IGNORE_CASE)
         var lastEnd = 0
@@ -275,7 +278,6 @@ class HuanmengWebDataSource : WebBookDataSource {
         }
     }
 
-    /** 构造标签页数据源（加载首页20本） */
     private fun buildTapPage(
         pageTitle: String,
         filterKey: String?,
@@ -311,7 +313,6 @@ class HuanmengWebDataSource : WebBookDataSource {
         }
     }
 
-    /** 构造可翻页扩展数据源 */
     private fun buildExpandedPage(
         pageTitle: String,
         filterKey: String?,
@@ -357,7 +358,6 @@ class HuanmengWebDataSource : WebBookDataSource {
         override fun getResultFlow(): Flow<SearchResult> = _resultFlow
     }
 
-    /** 发起书单请求（搜索 / 探索复用） */
     private suspend fun fetchBookList(
         key: String? = null,
         paramKey: String? = null,
@@ -373,8 +373,9 @@ class HuanmengWebDataSource : WebBookDataSource {
             if (paramKey != null && paramValue != null) param(paramKey, paramValue)
             header("User-Agent", UA)
         }.await()
-        val data = resp.body<HuanmengResponse<HuanmengBookList>>()
-        return data?.data
+        val body = resp.body ?: return null
+        val data = json.decodeFromString<HuanmengResponse<HuanmengBookList>>(body.string())
+        return data.data
     }
 }
 
@@ -399,6 +400,7 @@ private fun HuanmengBookItem.toBookInformation(): BookInformation {
 }
 
 private fun HuanmengBookDetail.toBookInformation(): BookInformation {
+    val detailTags = this.tags  // 先取值，避免 apply 块中 tags 歧义
     return MutableBookInformation.empty().apply {
         id = this@toBookInformation.id.toString()
         title = name
@@ -408,7 +410,7 @@ private fun HuanmengBookDetail.toBookInformation(): BookInformation {
         tags.clear()
         val allTags = buildList {
             if (kind.isNotBlank()) addAll(kind.split(",", "，", " ").filter { it.isNotBlank() })
-            if (tags.isNotBlank()) addAll(tags.split(",", "，", " ").filter { it.isNotBlank() })
+            if (detailTags.isNotBlank()) addAll(detailTags.split(",", "，", " ").filter { it.isNotBlank() })
         }.distinct()
         this.tags.addAll(allTags)
         wordCount = WordCount(textNum)
@@ -425,7 +427,6 @@ private fun HuanmengBookItem.toExploreDisplayBook(): ExploreDisplayBook =
         coverUri = Uri.parse(this.pic)
     )
 
-/** 安全解析日期时间字符串 */
 private fun String.parseDateTime(): LocalDateTime {
     val formatters = listOf(
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
@@ -438,7 +439,6 @@ private fun String.parseDateTime(): LocalDateTime {
     return LocalDateTime.MIN
 }
 
-/** 去除 HTML 标签，将换行标签转换为 \n */
 private fun String.cleanHtml(): String = this
     .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
     .replace(Regex("<p[^>]*>", RegexOption.IGNORE_CASE), "\n")
