@@ -13,7 +13,7 @@ cxhttp = "1.2.5"
 okhttp = "5.3.2"
 kotlinSerialization = "1.10.0"
 jsoup = "1.22.1"
-lightnovelreader = "0.2-SNAPSHOT"
+lightnovelreader = "0.2"
 
 [libraries]
 cxhttp = { module = "com.zhzc0x.cxhttp:cxhttp", version.ref = "cxhttp" }
