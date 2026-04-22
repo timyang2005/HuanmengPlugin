@@ -1,0 +1,93 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties', 'gradle/libs.versions.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Build Release APK (.lnrp)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+        run: ./gradlew :plugin:assembleRelease --stacktrace
+
+      - name: Find .lnrp output
+        id: find_lnrp
+        run: |
+          LNRP=$(find plugin/build/outputs/apk/release -name "*.lnrp" | head -1)
+          echo "lnrp_path=$LNRP" >> $GITHUB_OUTPUT
+          echo "Found: $LNRP"
+
+      - name: Upload artifact (every build)
+        uses: actions/upload-artifact@v4
+        with:
+          name: huanmeng-plugin-lnrp
+          path: plugin/build/outputs/apk/release/*.lnrp
+          if-no-files-found: error
+
+      - name: Get version name
+        id: version
+        run: |
+          VERSION=$(grep 'versionName' plugin/build.gradle.kts | grep -oP '(?<=versionName = ")[^"]+' || echo "1.0.0")
+          TIMESTAMP=$(date +%Y%m%d%H%M)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "tag=v${VERSION}-${TIMESTAMP}" >> $GITHUB_OUTPUT
+
+      - name: Create GitHub Release
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "幻梦轻小说 LNR 插件 ${{ steps.version.outputs.version }}"
+          body: |
+            ## 幻梦轻小说 LNR 插件
+
+            自动构建产物，将 `.lnrp` 文件导入 LightNovelReader 即可使用。
+
+            **功能**：
+            - 关键词搜索
+            - 书籍详情 / 封面 / 简介 / 标签
+            - 按卷分组目录
+            - 正文文本 + 图片渲染
+            - 探索页面（最新、连载、完结、分类标签）
+
+            **构建信息**：
+            - 提交：${{ github.sha }}
+            - 时间：${{ github.event.head_commit.timestamp }}
+          files: plugin/build/outputs/apk/release/*.lnrp
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
