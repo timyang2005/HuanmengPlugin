@@ -390,9 +390,10 @@ private fun HuanmengBookItem.toBookInformation(): BookInformation {
         author = this@toBookInformation.author
         coverUri = Uri.parse(pic)
         description = intro
-        // 逐个添加标签
+        // Tags 通过 toMutableList 转换后添加
         if (kind.isNotBlank()) {
-            kind.split(",", "，", " ").filter { it.isNotBlank() }.forEach { addTag(it) }
+            val tagList = kind.split(",", "，", " ").filter { it.isNotBlank() }
+            tags = tagList.toMutableList()
         }
         wordCount = WordCount(textNum.parseWordCount())
         lastUpdated = updateTime.parseDateTime()
@@ -407,12 +408,12 @@ private fun HuanmengBookDetail.toBookInformation(): BookInformation {
         author = this@toBookInformation.author
         coverUri = Uri.parse(pic)
         description = intro
-        // 逐个添加标签
+        // Tags 通过 toMutableList 转换后赋值
         val allTags = buildList {
             if (kind.isNotBlank()) addAll(kind.split(",", "，", " ").filter { it.isNotBlank() })
             if (detailTags.isNotBlank()) addAll(detailTags.split(",", "，", " ").filter { it.isNotBlank() })
         }.distinct()
-        allTags.forEach { addTag(it) }
+        tags = allTags.toMutableList()
         wordCount = WordCount(textNum.parseWordCount())
         lastUpdated = updateTime.parseDateTime()
         isComplete = state == 2
