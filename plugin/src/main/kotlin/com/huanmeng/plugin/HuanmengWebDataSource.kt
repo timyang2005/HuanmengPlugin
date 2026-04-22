@@ -384,37 +384,43 @@ class HuanmengWebDataSource : WebBookDataSource {
 // ================================================================
 
 private fun HuanmengBookItem.toBookInformation(): BookInformation {
-    return MutableBookInformation.empty().apply {
-        id = this@toBookInformation.id.toString()
-        title = name
-        author = this@toBookInformation.author
-        coverUri = Uri.parse(pic)
-        description = intro
-        // Tags 暂时禁用 - 等待API文档更新
-        // if (kind.isNotBlank()) {
-        //     kind.split(",", "，", " ").filter { it.isNotBlank() }.forEach { addTag(it) }
-        // }
-        wordCount = WordCount(textNum.parseWordCount())
-        lastUpdated = updateTime.parseDateTime()
-    }
+    val tagList = if (kind.isNotBlank()) {
+        kind.split(",", "，", " ").filter { it.isNotBlank() }
+    } else emptyList()
+    return MutableBookInformation(
+        id = this@toBookInformation.id.toString(),
+        title = name,
+        subtitle = "",
+        coverUrl = Uri.parse(pic),
+        author = this@toBookInformation.author,
+        description = intro,
+        tags = tagList,
+        publishingHouse = "",
+        wordCount = WordCount(textNum.parseWordCount()),
+        lastUpdated = updateTime.parseDateTime(),
+        isComplete = false
+    )
 }
 
 private fun HuanmengBookDetail.toBookInformation(): BookInformation {
-    return MutableBookInformation.empty().apply {
-        id = this@toBookInformation.id.toString()
-        title = name
-        author = this@toBookInformation.author
-        coverUri = Uri.parse(pic)
-        description = intro
-        // Tags 暂时禁用 - 等待API文档更新
-        // val allTags = buildList {
-        //     if (kind.isNotBlank()) addAll(kind.split(",", "，", " ").filter { it.isNotBlank() })
-        //     if (tags.isNotBlank()) addAll(tags.split(",", "，", " ").filter { it.isNotBlank() })
-        // }.distinct()
-        wordCount = WordCount(textNum.parseWordCount())
-        lastUpdated = updateTime.parseDateTime()
+    val detailTags = this.tags
+    val allTags = buildList {
+        if (kind.isNotBlank()) addAll(kind.split(",", "，", " ").filter { it.isNotBlank() })
+        if (detailTags.isNotBlank()) addAll(detailTags.split(",", "，", " ").filter { it.isNotBlank() })
+    }.distinct()
+    return MutableBookInformation(
+        id = this@toBookInformation.id.toString(),
+        title = name,
+        subtitle = "",
+        coverUrl = Uri.parse(pic),
+        author = this@toBookInformation.author,
+        description = intro,
+        tags = allTags,
+        publishingHouse = "",
+        wordCount = WordCount(textNum.parseWordCount()),
+        lastUpdated = updateTime.parseDateTime(),
         isComplete = state == 2
-    }
+    )
 }
 
 private fun HuanmengBookItem.toExploreDisplayBook(): ExploreDisplayBook =
