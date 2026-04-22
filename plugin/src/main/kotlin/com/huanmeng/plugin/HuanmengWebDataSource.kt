@@ -8,8 +8,8 @@ import com.huanmeng.plugin.model.HuanmengContentData
 import com.huanmeng.plugin.model.HuanmengBookItem
 import com.huanmeng.plugin.model.HuanmengResponse
 import com.huanmeng.plugin.utils.KotlinSerializationJsonConverter
+import cxhttp.CxHttp
 import cxhttp.CxHttpHelper
-import cxhttp.request.get
 import io.nightfish.lightnovelreader.api.book.BookInformation
 import io.nightfish.lightnovelreader.api.book.BookVolumes
 import io.nightfish.lightnovelreader.api.book.ChapterContent
@@ -22,6 +22,7 @@ import io.nightfish.lightnovelreader.api.content.builder.image
 import io.nightfish.lightnovelreader.api.content.builder.simpleText
 import io.nightfish.lightnovelreader.api.explore.ExploreDisplayBook
 import io.nightfish.lightnovelreader.api.explore.ExploreBooksRow
+import io.nightfish.lightnovelreader.api.util.LocalString
 import io.nightfish.lightnovelreader.api.web.WebBookDataSource
 import io.nightfish.lightnovelreader.api.web.WebDataSource
 import io.nightfish.lightnovelreader.api.web.explore.ExploreExpandedPageDataSource
@@ -125,7 +126,7 @@ class HuanmengWebDataSource : WebBookDataSource {
     override val searchProvider: SearchProvider = object : SearchProvider {
 
         override val searchTypes: List<SearchType> = listOf(
-            SearchType("keyword", "关键词")
+            SearchType("keyword", LocalString("关键词"), LocalString("输入关键词搜索"))
         )
 
         override fun search(searchType: SearchType, keyword: String): Flow<SearchResult> = flow {
@@ -158,7 +159,7 @@ class HuanmengWebDataSource : WebBookDataSource {
 
     override suspend fun getBookInformation(id: String): BookInformation {
         return try {
-            val resp = CxHttpHelper.get<HuanmengResponse<HuanmengBookDetail>>(
+            val resp = CxHttp.get<HuanmengResponse<HuanmengBookDetail>>(
                 "$BASE_URL/detail"
             ) {
                 param("password", PASSWORD)
@@ -177,7 +178,7 @@ class HuanmengWebDataSource : WebBookDataSource {
 
     override suspend fun getBookVolumes(id: String): BookVolumes {
         return try {
-            val resp = CxHttpHelper.get<HuanmengResponse<HuanmengChapterList>>(
+            val resp = CxHttp.get<HuanmengResponse<HuanmengChapterList>>(
                 "$BASE_URL/chapters"
             ) {
                 param("password", PASSWORD)
@@ -188,8 +189,8 @@ class HuanmengWebDataSource : WebBookDataSource {
 
             val chapters = resp.data?.list ?: return BookVolumes.empty(id)
 
-            // 按 volumeId 分组
-            val groupMap = linkedMapOf<Int, Pair<String, MutableList<ChapterInformation>>>()
+            // 按 volumeId 分组 — 显式声明类型消除歧义
+            val groupMap: MutableMap<Int, Pair<String, MutableList<ChapterInformation>>> = linkedMapOf()
             for (ch in chapters) {
                 val vId = ch.volumeId
                 val vName = ch.volumeName.ifBlank { "正文" }
@@ -226,7 +227,7 @@ class HuanmengWebDataSource : WebBookDataSource {
             if (parts.size != 2) return ChapterContent.empty(chapterId)
             val (bid, cid) = parts
 
-            val resp = CxHttpHelper.get<HuanmengResponse<HuanmengContentData>>(
+            val resp = CxHttp.get<HuanmengResponse<HuanmengContentData>>(
                 "$BASE_URL/content"
             ) {
                 param("password", PASSWORD)
@@ -369,7 +370,7 @@ class HuanmengWebDataSource : WebBookDataSource {
         page: Int = 1,
         size: Int = 20
     ): HuanmengBookList? {
-        val resp = CxHttpHelper.get<HuanmengResponse<HuanmengBookList>>(
+        val resp = CxHttp.get<HuanmengResponse<HuanmengBookList>>(
             "$BASE_URL/search"
         ) {
             param("password", PASSWORD)
