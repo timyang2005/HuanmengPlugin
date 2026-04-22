@@ -26,7 +26,7 @@ data class HuanmengBookItem(
     val pic: String = "",
     val intro: String = "",
     val kind: String = "",
-    @SerialName("text_num") val textNum: Int = 0,
+    @SerialName("text_num") val textNum: String = "",
     @SerialName("update_time") val updateTime: String = ""
 )
 
@@ -51,7 +51,7 @@ data class HuanmengBookDetail(
     val intro: String = "",
     val kind: String = "",
     val tags: String = "",
-    @SerialName("text_num") val textNum: Int = 0,
+    @SerialName("text_num") val textNum: String = "",
     @SerialName("update_time") val updateTime: String = "",
     val state: Int = 0   // 1=连载中 2=已完结
 )

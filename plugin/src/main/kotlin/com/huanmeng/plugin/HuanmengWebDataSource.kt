@@ -394,7 +394,7 @@ private fun HuanmengBookItem.toBookInformation(): BookInformation {
         if (kind.isNotBlank()) {
             tags.addAll(kind.split(",", "，", " ").filter { it.isNotBlank() })
         }
-        wordCount = WordCount(textNum)
+        wordCount = WordCount(textNum.parseWordCount())
         lastUpdated = updateTime.parseDateTime()
     }
 }
@@ -413,7 +413,7 @@ private fun HuanmengBookDetail.toBookInformation(): BookInformation {
             if (detailTags.isNotBlank()) addAll(detailTags.split(",", "，", " ").filter { it.isNotBlank() })
         }.distinct()
         this.tags.addAll(allTags)
-        wordCount = WordCount(textNum)
+        wordCount = WordCount(textNum.parseWordCount())
         lastUpdated = updateTime.parseDateTime()
         isComplete = state == 2
     }
@@ -451,3 +451,20 @@ private fun String.cleanHtml(): String = this
     .replace("&quot;", "\"")
     .replace(Regex("\n{3,}"), "\n\n")
     .trim()
+
+/**
+ * 解析字数字符串（如 "122 万" 或 "5000"）为整数
+ */
+private fun String.parseWordCount(): Int {
+    if (this.isBlank()) return 0
+    val trimmed = this.trim()
+    // 匹配数字部分
+    val numMatch = Regex("""([\d.]+)""").find(trimmed)
+    val num = numMatch?.groupValues?.get(1)?.toDoubleOrNull() ?: return 0
+    // 判断是否包含"万"字
+    return if (trimmed.contains("万")) {
+        (num * 10000).toInt()
+    } else {
+        num.toInt()
+    }
+}
