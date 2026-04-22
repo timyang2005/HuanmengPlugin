@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.compose.compiler)
+    // AGP 9.0+ 已内置 Kotlin 支持，无需再声明 kotlin.android
+    // AGP 9.0+ 已内置 Compose 编译器，无需再声明 compose.compiler
     alias(libs.plugins.kotlin.serialization)
 }
 
@@ -43,18 +43,12 @@ android {
 androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
-            if (output is com.android.build.api.variant.impl.VariantOutputImpl) {
-                output.outputFileName = "huanmeng-plugin-${variant.name}.lnrp"
-            }
+            output.outputFileName.set("huanmeng-plugin-${variant.name}.lnrp")
         }
     }
 }
 
-kotlin {
-    compilerOptions {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17)
-    }
-}
+
 
 dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
