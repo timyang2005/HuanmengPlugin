@@ -16,15 +16,7 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // LightNovelReader Plugin API — GitHub Packages
-        maven {
-            url = uri("https://maven.pkg.github.com/dmzz-yyhyy/LightNovelReader")
-            credentials {
-                username = System.getenv("GPR_USER") ?: providers.gradleProperty("gpr.user").orNull ?: ""
-                password = System.getenv("GPR_TOKEN") ?: providers.gradleProperty("gpr.key").orNull ?: ""
-            }
-        }
-        // 备用：JitPack
+        maven { url = uri("https://maven.nariko.org/release") }
         maven { url = uri("https://jitpack.io") }
     }
 }
