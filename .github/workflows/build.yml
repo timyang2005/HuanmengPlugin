@@ -44,10 +44,19 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
         run: ./gradlew :plugin:assembleRelease --stacktrace
 
+      - name: Rename APK to .lnrp
+        run: |
+          mkdir -p plugin/build/outputs/lnrp
+          find plugin/build/outputs/apk/release -name "*.apk" | while read f; do
+            base=$(basename "$f" .apk)
+            cp "$f" "plugin/build/outputs/lnrp/${base}.lnrp"
+          done
+          ls -la plugin/build/outputs/lnrp/
+
       - name: Find .lnrp output
         id: find_lnrp
         run: |
-          LNRP=$(find plugin/build/outputs/apk/release -name "*.lnrp" | head -1)
+          LNRP=$(find plugin/build/outputs/lnrp -name "*.lnrp" | head -1)
           echo "lnrp_path=$LNRP" >> $GITHUB_OUTPUT
           echo "Found: $LNRP"
 
@@ -55,7 +64,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: huanmeng-plugin-lnrp
-          path: plugin/build/outputs/apk/release/*.lnrp
+          path: plugin/build/outputs/lnrp/*.lnrp
           if-no-files-found: error
 
       - name: Get version name
@@ -87,7 +96,7 @@ jobs:
             **构建信息**：
             - 提交：${{ github.sha }}
             - 时间：${{ github.event.head_commit.timestamp }}
-          files: plugin/build/outputs/apk/release/*.lnrp
+          files: plugin/build/outputs/lnrp/*.lnrp
           make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
