@@ -44,12 +44,14 @@ jobs:
           GITHUB_ACTOR: ${{ github.actor }}
         run: ./gradlew :plugin:assembleRelease --stacktrace
 
-      - name: Rename APK to .lnrp
+      - name: Collect .lnrp output
         run: |
           mkdir -p plugin/build/outputs/lnrp
+          find plugin/build/outputs/apk/release -name "*.lnrp" -exec cp {} plugin/build/outputs/lnrp/ \;
           find plugin/build/outputs/apk/release -name "*.apk" | while read f; do
             base=$(basename "$f" .apk)
-            cp "$f" "plugin/build/outputs/lnrp/${base}.lnrp"
+            dest="plugin/build/outputs/lnrp/${base}.lnrp"
+            if [ ! -f "$dest" ]; then cp "$f" "$dest"; fi
           done
           ls -la plugin/build/outputs/lnrp/
 
@@ -80,22 +82,15 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: "幻梦轻小说 LNR 插件 ${{ steps.version.outputs.version }}"
+          name: "Huanmeng LNR Plugin ${{ steps.version.outputs.version }}"
           body: |
-            ## 幻梦轻小说 LNR 插件
+            ## Huanmeng LNR Plugin
 
-            自动构建产物，将 `.lnrp` 文件导入 LightNovelReader 即可使用。
+            Auto-built `.lnrp` plugin for LightNovelReader.
 
-            **功能**：
-            - 关键词搜索
-            - 书籍详情 / 封面 / 简介 / 标签
-            - 按卷分组目录
-            - 正文文本 + 图片渲染
-            - 探索页面（最新、连载、完结、分类标签）
-
-            **构建信息**：
-            - 提交：${{ github.sha }}
-            - 时间：${{ github.event.head_commit.timestamp }}
+            - Search, book details, volume-based TOC, text+image content, explore pages
+            - Commit: ${{ github.sha }}
+            - Time: ${{ github.event.head_commit.timestamp }}
           files: plugin/build/outputs/lnrp/*.lnrp
           make_latest: true
         env:
