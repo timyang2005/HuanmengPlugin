@@ -42,6 +42,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
+          GPR_USER: ${{ github.actor }}
+          GPR_TOKEN: ${{ secrets.GPR_TOKEN }}
         run: ./gradlew :plugin:assembleRelease --stacktrace
 
       - name: Collect .lnrp output
