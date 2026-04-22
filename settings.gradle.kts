@@ -20,8 +20,8 @@ dependencyResolutionManagement {
         maven {
             url = uri("https://maven.pkg.github.com/dmzz-yyhyy/LightNovelReader")
             credentials {
-                username = System.getenv("GITHUB_ACTOR") ?: providers.gradleProperty("gpr.user").orNull ?: ""
-                password = System.getenv("GITHUB_TOKEN") ?: providers.gradleProperty("gpr.key").orNull ?: ""
+                username = System.getenv("GPR_USER") ?: providers.gradleProperty("gpr.user").orNull ?: ""
+                password = System.getenv("GPR_TOKEN") ?: providers.gradleProperty("gpr.key").orNull ?: ""
             }
         }
         // 备用：JitPack
