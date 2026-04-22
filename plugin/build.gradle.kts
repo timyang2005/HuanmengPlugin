@@ -34,21 +34,11 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
-    kotlinOptions {
-        jvmTarget = "17"
+    // AGP 9.0+ 内置 Kotlin，jvmTarget 通过 kotlin DSL 设置
+    kotlin {
+        jvmToolchain(17)
     }
 }
-
-// 将 apk 重命名为 .lnrp 插件格式
-androidComponents {
-    onVariants { variant ->
-        variant.outputs.forEach { output ->
-            output.outputFileName.set("huanmeng-plugin-${variant.name}.lnrp")
-        }
-    }
-}
-
-
 
 dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
