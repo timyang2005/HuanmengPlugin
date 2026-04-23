@@ -395,7 +395,7 @@ private fun HuanmengBookItem.toBookInformation(): BookInformation {
         tags = tagList,
         publishingHouse = "",
         wordCount = WordCount(textNum.parseWordCount()),
-        lastUpdated = updateTime.parseDateTime(),
+        lastUpdated = addtime.parseDateTime(),
         isComplete = false
     )
 }
@@ -416,8 +416,8 @@ private fun HuanmengBookDetail.toBookInformation(): BookInformation {
         tags = allTags,
         publishingHouse = "",
         wordCount = WordCount(textNum.parseWordCount()),
-        lastUpdated = updateTime.parseDateTime(),
-        isComplete = state == 2
+        lastUpdated = addtime.parseDateTime(),
+        isComplete = state.contains("完结")
     )
 }
 

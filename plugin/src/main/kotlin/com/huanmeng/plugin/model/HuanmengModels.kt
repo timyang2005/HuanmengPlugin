@@ -10,10 +10,30 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 
 // ============================================================
-// 自定义序列化器：兼容 String 和 Int 类型的 text_num
-// API 返回的 text_num 有时是 "122 万"（字符串），
-// 有时是 1704（数字），需要统一处理为 String
+// 自定义序列化器：兼容 String 和 Int 类型
+// API 返回的 id/state 等字段有时是字符串有时是数字
 // ============================================================
+
+object FlexibleIntSerializer : KSerializer<Int> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("FlexibleInt", PrimitiveKind.INT)
+
+    override fun serialize(encoder: Encoder, value: Int) {
+        encoder.encodeInt(value)
+    }
+
+    override fun deserialize(decoder: Decoder): Int {
+        return try {
+            decoder.decodeInt()
+        } catch (_: Exception) {
+            try {
+                decoder.decodeString().toIntOrNull() ?: 0
+            } catch (_: Exception) {
+                0
+            }
+        }
+    }
+}
 
 object FlexibleStringSerializer : KSerializer<String> {
     override val descriptor: SerialDescriptor =
@@ -49,10 +69,13 @@ data class HuanmengResponse<T>(
 
 // ============================================================
 // 搜索 / 探索书单 — 列表项
+// API 实际字段: id(String), name, pic, author, state(String),
+//   text(intro), text_num(String/Int), tags, addtime, picx, intro, kind
 // ============================================================
 
 @Serializable
 data class HuanmengBookItem(
+    @Serializable(FlexibleIntSerializer::class)
     val id: Int = 0,
     val name: String = "",
     val author: String = "",
@@ -61,7 +84,7 @@ data class HuanmengBookItem(
     val kind: String = "",
     @Serializable(FlexibleStringSerializer::class)
     @SerialName("text_num") val textNum: String = "",
-    @SerialName("update_time") val updateTime: String = ""
+    @SerialName("addtime") val addtime: String = ""
 )
 
 @Serializable
@@ -74,10 +97,13 @@ data class HuanmengBookList(
 
 // ============================================================
 // 书籍详情
+// API 实际字段: id(String), cid, name, pic, author, state(String),
+//   text(intro), text_num(String), nums, tags, addtime, picx, intro, kind
 // ============================================================
 
 @Serializable
 data class HuanmengBookDetail(
+    @Serializable(FlexibleIntSerializer::class)
     val id: Int = 0,
     val name: String = "",
     val author: String = "",
@@ -87,8 +113,8 @@ data class HuanmengBookDetail(
     val tags: String = "",
     @Serializable(FlexibleStringSerializer::class)
     @SerialName("text_num") val textNum: String = "",
-    @SerialName("update_time") val updateTime: String = "",
-    val state: Int = 0   // 1=连载中 2=已完结
+    @SerialName("addtime") val addtime: String = "",
+    val state: String = ""   // API返回 "连载" 或 "完结"
 )
 
 // ============================================================
@@ -97,9 +123,12 @@ data class HuanmengBookDetail(
 
 @Serializable
 data class HuanmengChapterItem(
+    @Serializable(FlexibleIntSerializer::class)
     val id: Int = 0,
+    @Serializable(FlexibleIntSerializer::class)
     val bid: Int = 0,
     val name: String = "",
+    @Serializable(FlexibleIntSerializer::class)
     @SerialName("volume_id") val volumeId: Int = 0,
     @SerialName("volume_name") val volumeName: String = ""
 )
