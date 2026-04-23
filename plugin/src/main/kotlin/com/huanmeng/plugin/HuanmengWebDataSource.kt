@@ -42,8 +42,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 
 private const val BASE_URL = "https://www.huanmengacg.com/index.php/bookapi"
 private const val PASSWORD = "huanmengapi"
@@ -432,15 +430,29 @@ private fun HuanmengBookItem.toExploreDisplayBook(): ExploreDisplayBook =
     )
 
 private fun String.parseDateTime(): LocalDateTime {
-    val formatters = listOf(
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
-        DateTimeFormatter.ofPattern("yyyy-MM-dd"),
-        DateTimeFormatter.ISO_DATE_TIME
-    )
-    for (fmt in formatters) {
-        try { return LocalDateTime.parse(this, fmt) } catch (_: DateTimeParseException) {}
+    // 手动解析日期字符串，避免 DateTimeFormatter 静态字段引用
+    // 导致 desugar 库与 LNR 宿主的 j$.time 冲突
+    try {
+        val parts = this.trim().split(" ", "T")
+        val dateParts = parts.getOrNull(0)?.split("-") ?: return LocalDateTime.MIN
+        if (dateParts.size != 3) return LocalDateTime.MIN
+        val year = dateParts[0].toIntOrNull() ?: return LocalDateTime.MIN
+        val month = dateParts[1].toIntOrNull() ?: return LocalDateTime.MIN
+        val day = dateParts[2].toIntOrNull() ?: return LocalDateTime.MIN
+
+        var hour = 0
+        var minute = 0
+        var second = 0
+        if (parts.size > 1) {
+            val timeParts = parts[1].split(":")
+            hour = timeParts.getOrNull(0)?.toIntOrNull() ?: 0
+            minute = timeParts.getOrNull(1)?.toIntOrNull() ?: 0
+            second = timeParts.getOrNull(2)?.toIntOrNull() ?: 0
+        }
+        return LocalDateTime.of(year, month, day, hour, minute, second)
+    } catch (_: Exception) {
+        return LocalDateTime.MIN
     }
-    return LocalDateTime.MIN
 }
 
 private fun String.cleanHtml(): String = this

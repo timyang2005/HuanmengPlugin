@@ -1,7 +1,40 @@
 package com.huanmeng.plugin.model
 
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+
+// ============================================================
+// 自定义序列化器：兼容 String 和 Int 类型的 text_num
+// API 返回的 text_num 有时是 "122 万"（字符串），
+// 有时是 1704（数字），需要统一处理为 String
+// ============================================================
+
+object FlexibleStringSerializer : KSerializer<String> {
+    override val descriptor: SerialDescriptor =
+        PrimitiveSerialDescriptor("FlexibleString", PrimitiveKind.STRING)
+
+    override fun serialize(encoder: Encoder, value: String) {
+        encoder.encodeString(value)
+    }
+
+    override fun deserialize(decoder: Decoder): String {
+        return try {
+            decoder.decodeString()
+        } catch (_: Exception) {
+            try {
+                decoder.decodeInt().toString()
+            } catch (_: Exception) {
+                ""
+            }
+        }
+    }
+}
 
 // ============================================================
 // 通用响应封装
@@ -26,6 +59,7 @@ data class HuanmengBookItem(
     val pic: String = "",
     val intro: String = "",
     val kind: String = "",
+    @Serializable(FlexibleStringSerializer::class)
     @SerialName("text_num") val textNum: String = "",
     @SerialName("update_time") val updateTime: String = ""
 )
@@ -51,6 +85,7 @@ data class HuanmengBookDetail(
     val intro: String = "",
     val kind: String = "",
     val tags: String = "",
+    @Serializable(FlexibleStringSerializer::class)
     @SerialName("text_num") val textNum: String = "",
     @SerialName("update_time") val updateTime: String = "",
     val state: Int = 0   // 1=连载中 2=已完结
