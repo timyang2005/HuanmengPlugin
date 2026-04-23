@@ -395,7 +395,7 @@ private fun HuanmengBookItem.toBookInformation(): BookInformation {
         tags = tagList,
         publishingHouse = "",
         wordCount = WordCount(textNum.parseWordCount()),
-        lastUpdated = addtime.parseDateTime(),
+        lastUpdated = addtime.parseDateTime() as LocalDateTime,
         isComplete = false
     )
 }
@@ -416,7 +416,7 @@ private fun HuanmengBookDetail.toBookInformation(): BookInformation {
         tags = allTags,
         publishingHouse = "",
         wordCount = WordCount(textNum.parseWordCount()),
-        lastUpdated = addtime.parseDateTime(),
+        lastUpdated = addtime.parseDateTime() as LocalDateTime,
         isComplete = state.contains("完结")
     )
 }
@@ -429,16 +429,53 @@ private fun HuanmengBookItem.toExploreDisplayBook(): ExploreDisplayBook =
         coverUri = Uri.parse(this.pic)
     )
 
-private fun String.parseDateTime(): LocalDateTime {
-    // 手动解析日期字符串，避免 DateTimeFormatter 静态字段引用
-    // 导致 desugar 库与 LNR 宿主的 j$.time 冲突
+/**
+ * 通过反射创建 LocalDateTime，避免 desugar 冲突。
+ * 插件编译时 java.time 被 desugar 为 j$.time，但 LNR 宿主
+ * 有自己的 j$.time，方法签名不完全兼容。
+ * 使用反射直接调用宿主的 LocalDateTime.of() 绕过此问题。
+ */
+private object LocalDateTimeHelper {
+    private val localDateTimeClass: Class<*> by lazy {
+        // 优先尝试宿主的 j$.time（desugar 版本）
+        try {
+            Class.forName("j\$.time.LocalDateTime")
+        } catch (_: ClassNotFoundException) {
+            // 回退到标准 java.time（Android 26+）
+            Class.forName("java.time.LocalDateTime")
+        }
+    }
+
+    private val ofMethod by lazy {
+        localDateTimeClass.getMethod("of",
+            Int::class.javaPrimitiveType,  // year
+            Int::class.javaPrimitiveType,  // month
+            Int::class.javaPrimitiveType,  // day
+            Int::class.javaPrimitiveType,  // hour
+            Int::class.javaPrimitiveType,  // minute
+            Int::class.javaPrimitiveType   // second
+        )
+    }
+
+    private val minField by lazy {
+        localDateTimeClass.getField("MIN")
+    }
+
+    fun of(year: Int, month: Int, day: Int, hour: Int, minute: Int, second: Int): Any {
+        return ofMethod.invoke(null, year, month, day, hour, minute, second)
+    }
+
+    val MIN: Any by lazy { minField.get(null) }
+}
+
+private fun String.parseDateTime(): Any {
     try {
         val parts = this.trim().split(" ", "T")
-        val dateParts = parts.getOrNull(0)?.split("-") ?: return LocalDateTime.MIN
-        if (dateParts.size != 3) return LocalDateTime.MIN
-        val year = dateParts[0].toIntOrNull() ?: return LocalDateTime.MIN
-        val month = dateParts[1].toIntOrNull() ?: return LocalDateTime.MIN
-        val day = dateParts[2].toIntOrNull() ?: return LocalDateTime.MIN
+        val dateParts = parts.getOrNull(0)?.split("-") ?: return LocalDateTimeHelper.MIN
+        if (dateParts.size != 3) return LocalDateTimeHelper.MIN
+        val year = dateParts[0].toIntOrNull() ?: return LocalDateTimeHelper.MIN
+        val month = dateParts[1].toIntOrNull() ?: return LocalDateTimeHelper.MIN
+        val day = dateParts[2].toIntOrNull() ?: return LocalDateTimeHelper.MIN
 
         var hour = 0
         var minute = 0
@@ -449,9 +486,9 @@ private fun String.parseDateTime(): LocalDateTime {
             minute = timeParts.getOrNull(1)?.toIntOrNull() ?: 0
             second = timeParts.getOrNull(2)?.toIntOrNull() ?: 0
         }
-        return LocalDateTime.of(year, month, day, hour, minute, second)
+        return LocalDateTimeHelper.of(year, month, day, hour, minute, second)
     } catch (_: Exception) {
-        return LocalDateTime.MIN
+        return LocalDateTimeHelper.MIN
     }
 }
 
