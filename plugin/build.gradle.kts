@@ -14,10 +14,10 @@ android {
 
     defaultConfig {
         applicationId = "com.huanmeng.plugin"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
     }
     buildFeatures {
         compose = true
@@ -32,7 +32,7 @@ android {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
     compileOptions {
-        isCoreLibraryDesugaringEnabled = true
+        isCoreLibraryDesugaringEnabled = false
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -57,7 +57,7 @@ tasks.withType<KotlinJvmCompile>().configureEach {
 }
 
 dependencies {
-    coreLibraryDesugaring(libs.desugar.jdk.libs)
+    // desugaring removed - minSdk 26 natively supports java.time
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.runtime)
     implementation(libs.androidx.navigation.runtime.ktx)
