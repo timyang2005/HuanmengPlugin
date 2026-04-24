@@ -198,11 +198,11 @@ class HuanmengWebDataSource : WebBookDataSource {
             for (ch in chapters) {
                 val vId = ch.volumeId
                 val vName = ch.volumeName.ifBlank { "正文" }
-                groupMap.getOrPut(vId) { Pair(vName, mutableListOf()) }
+                groupMap.getOrPut(vId) { Pair(vName.decodeHtmlEntities(), mutableListOf()) }
                     .second.add(
                         ChapterInformation(
                             id = "${ch.bid}_${ch.id}",
-                            title = ch.name
+                            title = ch.name.decodeHtmlEntities()
                         )
                     )
             }
@@ -421,12 +421,12 @@ private fun HuanmengBookItem.toBookInformation(): BookInformation {
     } else emptyList()
     return HuanmengBookInformation(
         id = this@toBookInformation.id.toString(),
-        title = name,
+        title = name.decodeHtmlEntities(),
         subtitle = "",
         coverUri = Uri.parse(pic),
-        author = this@toBookInformation.author,
-        description = intro,
-        tags = tagList,
+        author = this@toBookInformation.author.decodeHtmlEntities(),
+        description = intro.decodeHtmlEntities(),
+        tags = tagList.map { it.decodeHtmlEntities() },
         publishingHouse = "",
         wordCount = WordCount(textNum.parseWordCount()),
         lastUpdated = addtime.parseDateTime(),
@@ -442,12 +442,12 @@ private fun HuanmengBookDetail.toBookInformation(): BookInformation {
     }.distinct()
     return HuanmengBookInformation(
         id = this@toBookInformation.id.toString(),
-        title = name,
+        title = name.decodeHtmlEntities(),
         subtitle = "",
         coverUri = Uri.parse(pic),
-        author = this@toBookInformation.author,
-        description = intro,
-        tags = allTags,
+        author = this@toBookInformation.author.decodeHtmlEntities(),
+        description = intro.decodeHtmlEntities(),
+        tags = allTags.map { it.decodeHtmlEntities() },
         publishingHouse = "",
         wordCount = WordCount(textNum.parseWordCount()),
         lastUpdated = addtime.parseDateTime(),
@@ -496,6 +496,31 @@ private fun String.cleanHtml(): String = this
     .replace("&quot;", "\"")
     .replace(Regex("\n{3,}"), "\n\n")
     .trim()
+
+/**
+ * 解码 HTML 实体编码（命名实体 + 数字实体）
+ * 处理 &#40; &#41; &#x28; &amp; &lt; 等各种格式
+ */
+private fun String.decodeHtmlEntities(): String {
+    var result = this
+    // 解码十六进制数字实体 &#xHH;
+    result = Regex("&#x([0-9a-fA-F]+);").replace(result) { match ->
+        match.groupValues[1].toIntOrNull(16)?.toChar()?.toString() ?: match.value
+    }
+    // 解码十进制数字实体 &#DDD;
+    result = Regex("&#(\\d+);").replace(result) { match ->
+        match.groupValues[1].toIntOrNull()?.toChar()?.toString() ?: match.value
+    }
+    // 解码常见命名实体
+    result = result
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&apos;", "'")
+        .replace("&nbsp;", " ")
+    return result
+}
 
 /**
  * 解析字数字符串（如 "122 万" 或 "5000"）为整数
