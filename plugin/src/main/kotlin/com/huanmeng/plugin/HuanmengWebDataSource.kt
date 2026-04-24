@@ -82,6 +82,8 @@ class HuanmengWebDataSource : WebBookDataSource {
     override val id: Int = "huanmengacg.com".hashCode()
     override suspend fun isOffLine(): Boolean = false
     override val offLine: Boolean = false
+    private val chapterListCache = mutableMapOf<String, List<String>>()
+
     override val isOffLineFlow: StateFlow<Boolean> = MutableStateFlow(false)
 
     // ================================================================
@@ -95,19 +97,22 @@ class HuanmengWebDataSource : WebBookDataSource {
                 "latest",
                 "ongoing",
                 "completed",
-                "tag_3", "tag_4", "tag_16",
-                "tag_17", "tag_26", "tag_46"
+                "tag_1", "tag_2", "tag_3", "tag_4", "tag_16",
+                "tag_17", "tag_26", "tag_34", "tag_46"
             )
 
             override val exploreTapPageDataSourceMap: Map<String, ExploreTapPageDataSource> = mapOf(
-                "latest"    to buildTapPage("最新", null, null),
-                "ongoing"   to buildTapPage("连载", "state", "1"),
-                "completed" to buildTapPage("完结", "state", "2"),
+                "latest"    to buildTapPage("\uD83C\uDFA1 最新更新", null, null),
+                "ongoing"   to buildTapPage("连载中", "state", "1"),
+                "completed" to buildTapPage("已完结", "state", "2"),
+                "tag_1"     to buildTapPage("校园", "tags", "1"),
+                "tag_2"     to buildTapPage("青春", "tags", "2"),
                 "tag_3"     to buildTapPage("恋爱", "tags", "3"),
                 "tag_4"     to buildTapPage("治愈", "tags", "4"),
                 "tag_16"    to buildTapPage("穿越", "tags", "16"),
                 "tag_17"    to buildTapPage("奇幻", "tags", "17"),
                 "tag_26"    to buildTapPage("悬疑", "tags", "26"),
+                "tag_34"    to buildTapPage("游戏", "tags", "34"),
                 "tag_46"    to buildTapPage("百合", "tags", "46")
             )
 
@@ -240,12 +245,42 @@ class HuanmengWebDataSource : WebBookDataSource {
             val builder = ContentBuilder()
             parseHtmlContent(raw, builder)
 
+            // 获取章节列表以设置 lastChapter/nextChapter，启用上一章/下一章导航
+            val allChapterIds = getChapterIdList(bookId)
+            val currentIndex = allChapterIds.indexOf(chapterId)
+            val prevId = if (currentIndex > 0) allChapterIds[currentIndex - 1] else ""
+            val nextId = if (currentIndex >= 0 && currentIndex < allChapterIds.size - 1) allChapterIds[currentIndex + 1] else ""
+
             val mutable = ChapterContent.empty(chapterId).toMutable()
             mutable.id = chapterId
             mutable.content = builder.build()
+            mutable.lastChapter = prevId
+            mutable.nextChapter = nextId
             mutable
         } catch (e: Exception) {
             ChapterContent.empty(chapterId)
+        }
+    }
+
+    /**
+     * 获取书籍的所有章节 ID 列表（带缓存）
+     */
+    private suspend fun getChapterIdList(bookId: String): List<String> {
+        chapterListCache[bookId]?.let { return it }
+        return try {
+            val resp = CxHttp.get("$BASE_URL/chapters") {
+                param("password", PASSWORD)
+                param("id", bookId)
+                param("size", "5000")
+                header("User-Agent", UA)
+            }.await()
+            val body = resp.body ?: return emptyList()
+            val data = json.decodeFromString<HuanmengResponse<HuanmengChapterList>>(body.string())
+            val ids = (data.data?.list ?: emptyList()).map { "${it.bid}_${it.id}" }
+            chapterListCache[bookId] = ids
+            ids
+        } catch (_: Exception) {
+            emptyList()
         }
     }
 
