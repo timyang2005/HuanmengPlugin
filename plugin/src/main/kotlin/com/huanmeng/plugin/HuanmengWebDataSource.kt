@@ -29,6 +29,7 @@ import io.nightfish.lightnovelreader.api.web.explore.ExploreExpandedPageDataSour
 import io.nightfish.lightnovelreader.api.web.explore.ExplorePageProvider
 import io.nightfish.lightnovelreader.api.web.explore.ExploreTapPageDataSource
 import io.nightfish.lightnovelreader.api.web.explore.filter.Filter
+import io.nightfish.lightnovelreader.api.web.explore.filter.SingleChoiceFilter
 import io.nightfish.lightnovelreader.api.web.search.SearchProvider
 import io.nightfish.lightnovelreader.api.web.search.SearchResult
 import io.nightfish.lightnovelreader.api.web.search.SearchType
@@ -93,33 +94,26 @@ class HuanmengWebDataSource : WebBookDataSource {
     override val explorePageProvider: ExplorePageProvider =
         object : ExplorePageProvider.DefaultExplorePageProvider {
 
+            // 一级 tab 只保留 3 个，避免 PrimaryTabRow 显示问题
             override val explorePageIdList: List<String> = listOf(
                 "latest",
                 "ongoing",
-                "completed",
-                "tag_1", "tag_2", "tag_3", "tag_4", "tag_16",
-                "tag_17", "tag_26", "tag_34", "tag_46"
+                "completed"
             )
 
             override val exploreTapPageDataSourceMap: Map<String, ExploreTapPageDataSource> = mapOf(
-                "latest"    to buildTapPage("\uD83C\uDFA1 最新更新", null, null),
-                "ongoing"   to buildTapPage("连载中", "state", "1"),
-                "completed" to buildTapPage("已完结", "state", "2"),
-                "tag_1"     to buildTapPage("校园", "tags", "1"),
-                "tag_2"     to buildTapPage("青春", "tags", "2"),
-                "tag_3"     to buildTapPage("恋爱", "tags", "3"),
-                "tag_4"     to buildTapPage("治愈", "tags", "4"),
-                "tag_16"    to buildTapPage("穿越", "tags", "16"),
-                "tag_17"    to buildTapPage("奇幻", "tags", "17"),
-                "tag_26"    to buildTapPage("悬疑", "tags", "26"),
-                "tag_34"    to buildTapPage("游戏", "tags", "34"),
-                "tag_46"    to buildTapPage("百合", "tags", "46")
+                "latest"    to buildTapPage("\uD83C\uDFA1 最新", null, null),
+                "ongoing"   to buildTapPage("连载", "state", "1"),
+                "completed" to buildTapPage("完结", "state", "2")
             )
 
+            // 展开页：分类作为二级筛选
             override val exploreExpandedPageDataSourceMap: Map<String, ExploreExpandedPageDataSource> = mapOf(
                 "latest_exp"    to buildExpandedPage("最新更新", null, null),
                 "ongoing_exp"   to buildExpandedPage("连载中", "state", "1"),
-                "completed_exp" to buildExpandedPage("已完结", "state", "2")
+                "completed_exp" to buildExpandedPage("已完结", "state", "2"),
+                // 分类展开页，带标签筛选
+                "category_all"  to buildCategoryExpandedPage()
             )
         }
 
@@ -366,6 +360,81 @@ class HuanmengWebDataSource : WebBookDataSource {
                     val books = fetchBookList(
                         paramKey = filterKey,
                         paramValue = filterValue,
+                        page = currentPage,
+                        size = 20
+                    )
+                    val list = books?.list ?: emptyList()
+                    if (list.isEmpty()) {
+                        _resultFlow.emit(SearchResult.End())
+                    } else {
+                        list.forEach {
+                            _resultFlow.emit(SearchResult.MultipleBook(it.toBookInformation()))
+                        }
+                        currentPage++
+                        if (list.size < 20) _resultFlow.emit(SearchResult.End())
+                    }
+                } catch (e: Exception) {
+                    _resultFlow.emit(SearchResult.Error(e))
+                } finally {
+                    loading = false
+                }
+            }
+        }
+
+        override fun getResultFlow(): Flow<SearchResult> = _resultFlow
+    }
+
+    /**
+     * 构建分类展开页（带标签筛选）
+     */
+    private fun buildCategoryExpandedPage(): ExploreExpandedPageDataSource = object : ExploreExpandedPageDataSource {
+
+        override val title: String = "分类"
+
+        // 分类标签列表
+        private val categories = listOf(
+            Pair("校园", "1"),
+            Pair("青春", "2"),
+            Pair("恋爱", "3"),
+            Pair("治愈", "4"),
+            Pair("穿越", "16"),
+            Pair("奇幻", "17"),
+            Pair("悬疑", "26"),
+            Pair("游戏", "34"),
+            Pair("百合", "46")
+        )
+
+        private var selectedTag: String? = null
+        private val _resultFlow = MutableStateFlow<SearchResult>(SearchResult.Empty())
+        private var currentPage = 1
+        private var loading = false
+
+        override val filters: List<Filter<*>> = listOf(
+            SingleChoiceFilter(
+                title = LocalString("标签"),
+                dialogTitle = LocalString("选择分类标签"),
+                description = LocalString("选择要查看的分类标签"),
+                choices = categories.map { it.first },
+                defaultChoice = categories.first().first
+            ).apply {
+                addOnChangeListener { choice ->
+                    selectedTag = categories.find { it.first == choice }?.second
+                    // 重置并重新加载
+                    currentPage = 1
+                    _resultFlow.value = SearchResult.Empty()
+                    loadMore()
+                }
+            }
+        )
+
+        override fun loadMore() {
+            if (loading) return
+            loading = true
+            ioScope.launch {
+                try {
+                    val books = fetchBookList(
+                        paramKey = if (selectedTag != null) "tags" else null,
+                        paramValue = selectedTag,
                         page = currentPage,
                         size = 20
                     )
