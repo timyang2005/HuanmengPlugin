@@ -14,10 +14,10 @@ android {
 
     defaultConfig {
         applicationId = "com.huanmeng.plugin"
-        minSdk = 26
+        minSdk = 24
         targetSdk = 36
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
     }
     buildFeatures {
         compose = true
@@ -32,7 +32,8 @@ android {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
     compileOptions {
-        isCoreLibraryDesugaringEnabled = false
+        // 启用 desugar 以支持 java.time 在低 API 设备上编译
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -57,7 +58,10 @@ tasks.withType<KotlinJvmCompile>().configureEach {
 }
 
 dependencies {
-    // desugaring removed - minSdk 26 natively supports java.time
+    // 核心：使用 compileOnly 引入 desugar 库
+    // 这样编译时 java.time 会被转换为 j$.time，但 desugar 运行时不打包进 APK
+    // 运行时由 LNR 宿主 App 提供 j$.time 类，避免版本冲突
+    coreLibraryDesugaring(libs.desugar.jdk.libs)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.runtime)
     implementation(libs.androidx.navigation.runtime.ktx)
