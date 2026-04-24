@@ -29,7 +29,6 @@ import io.nightfish.lightnovelreader.api.web.explore.ExploreExpandedPageDataSour
 import io.nightfish.lightnovelreader.api.web.explore.ExplorePageProvider
 import io.nightfish.lightnovelreader.api.web.explore.ExploreTapPageDataSource
 import io.nightfish.lightnovelreader.api.web.explore.filter.Filter
-import io.nightfish.lightnovelreader.api.web.explore.filter.SingleChoiceFilter
 import io.nightfish.lightnovelreader.api.web.search.SearchProvider
 import io.nightfish.lightnovelreader.api.web.search.SearchResult
 import io.nightfish.lightnovelreader.api.web.search.SearchType
@@ -114,8 +113,16 @@ class HuanmengWebDataSource : WebBookDataSource {
                 "latest_exp"    to buildExpandedPage("最新更新", null, null),
                 "ongoing_exp"   to buildExpandedPage("连载中", "state", "1"),
                 "completed_exp" to buildExpandedPage("已完结", "state", "2"),
-                // 分类展开页，带标签筛选
-                "category_exp"  to buildCategoryExpandedPage()
+                // 9个分类的展开页
+                "campus_exp"    to buildExpandedPage("校园", "tags", "1"),
+                "youth_exp"     to buildExpandedPage("青春", "tags", "2"),
+                "romance_exp"   to buildExpandedPage("恋爱", "tags", "3"),
+                "healing_exp"   to buildExpandedPage("治愈", "tags", "4"),
+                "isekai_exp"    to buildExpandedPage("穿越", "tags", "16"),
+                "fantasy_exp"   to buildExpandedPage("奇幻", "tags", "17"),
+                "mystery_exp"   to buildExpandedPage("悬疑", "tags", "26"),
+                "game_exp"      to buildExpandedPage("游戏", "tags", "34"),
+                "yuri_exp"      to buildExpandedPage("百合", "tags", "46")
             )
         }
 
@@ -342,35 +349,37 @@ class HuanmengWebDataSource : WebBookDataSource {
     }
 
     /**
-     * 构成分类卡片页（显示分类入口）
+     * 构成分类卡片页 - 每个分类一行
      */
     private fun buildCategoryTapPage(): ExploreTapPageDataSource = object : ExploreTapPageDataSource {
 
         override val title: String = "分类"
 
+        // 分类列表
+        private val categories = listOf(
+            Triple("校园", "1", "campus_exp"),
+            Triple("青春", "2", "youth_exp"),
+            Triple("恋爱", "3", "romance_exp"),
+            Triple("治愈", "4", "healing_exp"),
+            Triple("穿越", "16", "isekai_exp"),
+            Triple("奇幻", "17", "fantasy_exp"),
+            Triple("悬疑", "26", "mystery_exp"),
+            Triple("游戏", "34", "game_exp"),
+            Triple("百合", "46", "yuri_exp")
+        )
+
         override fun getRowsFlow(): Flow<List<ExploreBooksRow>> = flow {
-            // 显示9个分类标签作为入口
-            val categoryBooks = listOf(
-                ExploreDisplayBook("tag_1", "校园", "", android.net.Uri.EMPTY),
-                ExploreDisplayBook("tag_2", "青春", "", android.net.Uri.EMPTY),
-                ExploreDisplayBook("tag_3", "恋爱", "", android.net.Uri.EMPTY),
-                ExploreDisplayBook("tag_4", "治愈", "", android.net.Uri.EMPTY),
-                ExploreDisplayBook("tag_16", "穿越", "", android.net.Uri.EMPTY),
-                ExploreDisplayBook("tag_17", "奇幻", "", android.net.Uri.EMPTY),
-                ExploreDisplayBook("tag_26", "悬疑", "", android.net.Uri.EMPTY),
-                ExploreDisplayBook("tag_34", "游戏", "", android.net.Uri.EMPTY),
-                ExploreDisplayBook("tag_46", "百合", "", android.net.Uri.EMPTY)
-            )
-            emit(
-                listOf(
-                    ExploreBooksRow(
-                        title = "分类浏览",
-                        bookList = categoryBooks,
-                        expandable = true,
-                        expandedPageDataSourceId = "category_exp"
-                    )
+            // 每个分类作为一行，显示该分类的几本书
+            val rows = categories.map { (name, tagId, expId) ->
+                val books = fetchBookList(paramKey = "tags", paramValue = tagId, page = 1, size = 10)
+                ExploreBooksRow(
+                    title = name,
+                    bookList = (books?.list ?: emptyList()).map { it.toExploreDisplayBook() },
+                    expandable = true,
+                    expandedPageDataSourceId = expId
                 )
-            )
+            }
+            emit(rows)
         }
     }
 
@@ -395,88 +404,6 @@ class HuanmengWebDataSource : WebBookDataSource {
                     val books = fetchBookList(
                         paramKey = filterKey,
                         paramValue = filterValue,
-                        page = currentPage,
-                        size = 20
-                    )
-                    val list = books?.list ?: emptyList()
-                    if (list.isEmpty()) {
-                        _resultFlow.emit(SearchResult.End())
-                    } else {
-                        list.forEach {
-                            _resultFlow.emit(SearchResult.MultipleBook(it.toBookInformation()))
-                        }
-                        currentPage++
-                        if (list.size < 20) _resultFlow.emit(SearchResult.End())
-                    }
-                } catch (e: Exception) {
-                    _resultFlow.emit(SearchResult.Error(e))
-                } finally {
-                    loading = false
-                }
-            }
-        }
-
-        override fun getResultFlow(): Flow<SearchResult> = _resultFlow
-    }
-
-    /**
-     * 构建分类展开页（带标签筛选）
-     */
-    private fun buildCategoryExpandedPage(): ExploreExpandedPageDataSource = object : ExploreExpandedPageDataSource {
-
-        override val title: String = "分类"
-
-        // 分类标签列表
-        private val categories = listOf(
-            Pair("校园", "1"),
-            Pair("青春", "2"),
-            Pair("恋爱", "3"),
-            Pair("治愈", "4"),
-            Pair("穿越", "16"),
-            Pair("奇幻", "17"),
-            Pair("悬疑", "26"),
-            Pair("游戏", "34"),
-            Pair("百合", "46")
-        )
-
-        // 默认选中第一个标签（校园）
-        private var selectedTag: String = categories.first().second
-        private val _resultFlow = MutableStateFlow<SearchResult>(SearchResult.Empty())
-        private var currentPage = 1
-        private var loading = false
-        private var initialized = false
-
-        override val filters: List<Filter<*>> = listOf(
-            SingleChoiceFilter(
-                title = LocalString("标签"),
-                dialogTitle = LocalString("选择分类标签"),
-                description = LocalString("选择要查看的分类标签"),
-                choices = categories.map { it.first },
-                defaultChoice = categories.first().first
-            ).apply {
-                addOnChangeListener { choice ->
-                    selectedTag = categories.find { it.first == choice }?.second ?: categories.first().second
-                    // 重置并重新加载
-                    currentPage = 1
-                    _resultFlow.value = SearchResult.Empty()
-                    loadMore()
-                }
-            }
-        )
-
-        init {
-            // 初始化时自动加载第一页
-            loadMore()
-        }
-
-        override fun loadMore() {
-            if (loading) return
-            loading = true
-            ioScope.launch {
-                try {
-                    val books = fetchBookList(
-                        paramKey = if (selectedTag != null) "tags" else null,
-                        paramValue = selectedTag,
                         page = currentPage,
                         size = 20
                     )
