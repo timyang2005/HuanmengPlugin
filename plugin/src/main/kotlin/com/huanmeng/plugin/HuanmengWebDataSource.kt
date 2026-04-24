@@ -83,6 +83,7 @@ class HuanmengWebDataSource : WebBookDataSource {
     override suspend fun isOffLine(): Boolean = false
     override val offLine: Boolean = false
     private val chapterListCache = mutableMapOf<String, List<String>>()
+    private val chapterTitleCache = mutableMapOf<String, String>()
 
     override val isOffLineFlow: StateFlow<Boolean> = MutableStateFlow(false)
 
@@ -256,6 +257,7 @@ class HuanmengWebDataSource : WebBookDataSource {
 
             val mutable = ChapterContent.empty(chapterId).toMutable()
             mutable.id = chapterId
+            mutable.title = chapterTitleCache[chapterId] ?: ""
             mutable.content = builder.build()
             mutable.lastChapter = prevId
             mutable.nextChapter = nextId
@@ -266,7 +268,7 @@ class HuanmengWebDataSource : WebBookDataSource {
     }
 
     /**
-     * 获取书籍的所有章节 ID 列表（带缓存）
+     * 获取书籍的所有章节 ID 列表（带缓存），同时缓存章节标题
      */
     private suspend fun getChapterIdList(bookId: String): List<String> {
         chapterListCache[bookId]?.let { return it }
@@ -279,7 +281,12 @@ class HuanmengWebDataSource : WebBookDataSource {
             }.await()
             val body = resp.body ?: return emptyList()
             val data = json.decodeFromString<HuanmengResponse<HuanmengChapterList>>(body.string())
-            val ids = (data.data?.list ?: emptyList()).map { "${it.bid}_${it.id}" }
+            val chapters = data.data?.list ?: emptyList()
+            val ids = chapters.map { "${it.bid}_${it.id}" }
+            // 缓存章节标题
+            chapters.forEach { ch ->
+                chapterTitleCache["${ch.bid}_${ch.id}"] = ch.name.decodeHtmlEntities()
+            }
             chapterListCache[bookId] = ids
             ids
         } catch (_: Exception) {
