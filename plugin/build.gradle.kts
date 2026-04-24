@@ -16,8 +16,8 @@ android {
         applicationId = "com.huanmeng.plugin"
         minSdk = 24
         targetSdk = 36
-        versionCode = 8
-        versionName = "1.6.0"
+        versionCode = 9
+        versionName = "1.6.1"
     }
     buildFeatures {
         compose = true

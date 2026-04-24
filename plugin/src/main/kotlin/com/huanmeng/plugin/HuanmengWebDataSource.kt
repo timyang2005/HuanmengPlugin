@@ -94,26 +94,28 @@ class HuanmengWebDataSource : WebBookDataSource {
     override val explorePageProvider: ExplorePageProvider =
         object : ExplorePageProvider.DefaultExplorePageProvider {
 
-            // 一级 tab 只保留 3 个，避免 PrimaryTabRow 显示问题
+            // 一级 tab：4 个主要入口（最新、连载、完结、分类）
             override val explorePageIdList: List<String> = listOf(
                 "latest",
                 "ongoing",
-                "completed"
+                "completed",
+                "category"
             )
 
             override val exploreTapPageDataSourceMap: Map<String, ExploreTapPageDataSource> = mapOf(
                 "latest"    to buildTapPage("\uD83C\uDFA1 最新", null, null),
                 "ongoing"   to buildTapPage("连载", "state", "1"),
-                "completed" to buildTapPage("完结", "state", "2")
+                "completed" to buildTapPage("完结", "state", "2"),
+                "category"  to buildCategoryTapPage()
             )
 
-            // 展开页：分类作为二级筛选
+            // 展开页
             override val exploreExpandedPageDataSourceMap: Map<String, ExploreExpandedPageDataSource> = mapOf(
                 "latest_exp"    to buildExpandedPage("最新更新", null, null),
                 "ongoing_exp"   to buildExpandedPage("连载中", "state", "1"),
                 "completed_exp" to buildExpandedPage("已完结", "state", "2"),
                 // 分类展开页，带标签筛选
-                "category_all"  to buildCategoryExpandedPage()
+                "category_exp"  to buildCategoryExpandedPage()
             )
         }
 
@@ -339,6 +341,39 @@ class HuanmengWebDataSource : WebBookDataSource {
         }
     }
 
+    /**
+     * 构成分类卡片页（显示分类入口）
+     */
+    private fun buildCategoryTapPage(): ExploreTapPageDataSource = object : ExploreTapPageDataSource {
+
+        override val title: String = "分类"
+
+        override fun getRowsFlow(): Flow<List<ExploreBooksRow>> = flow {
+            // 显示9个分类标签作为入口
+            val categoryBooks = listOf(
+                ExploreDisplayBook("tag_1", "校园", "", android.net.Uri.EMPTY),
+                ExploreDisplayBook("tag_2", "青春", "", android.net.Uri.EMPTY),
+                ExploreDisplayBook("tag_3", "恋爱", "", android.net.Uri.EMPTY),
+                ExploreDisplayBook("tag_4", "治愈", "", android.net.Uri.EMPTY),
+                ExploreDisplayBook("tag_16", "穿越", "", android.net.Uri.EMPTY),
+                ExploreDisplayBook("tag_17", "奇幻", "", android.net.Uri.EMPTY),
+                ExploreDisplayBook("tag_26", "悬疑", "", android.net.Uri.EMPTY),
+                ExploreDisplayBook("tag_34", "游戏", "", android.net.Uri.EMPTY),
+                ExploreDisplayBook("tag_46", "百合", "", android.net.Uri.EMPTY)
+            )
+            emit(
+                listOf(
+                    ExploreBooksRow(
+                        title = "分类浏览",
+                        bookList = categoryBooks,
+                        expandable = true,
+                        expandedPageDataSourceId = "category_exp"
+                    )
+                )
+            )
+        }
+    }
+
     private fun buildExpandedPage(
         pageTitle: String,
         filterKey: String?,
@@ -404,10 +439,12 @@ class HuanmengWebDataSource : WebBookDataSource {
             Pair("百合", "46")
         )
 
-        private var selectedTag: String? = null
+        // 默认选中第一个标签（校园）
+        private var selectedTag: String = categories.first().second
         private val _resultFlow = MutableStateFlow<SearchResult>(SearchResult.Empty())
         private var currentPage = 1
         private var loading = false
+        private var initialized = false
 
         override val filters: List<Filter<*>> = listOf(
             SingleChoiceFilter(
@@ -418,7 +455,7 @@ class HuanmengWebDataSource : WebBookDataSource {
                 defaultChoice = categories.first().first
             ).apply {
                 addOnChangeListener { choice ->
-                    selectedTag = categories.find { it.first == choice }?.second
+                    selectedTag = categories.find { it.first == choice }?.second ?: categories.first().second
                     // 重置并重新加载
                     currentPage = 1
                     _resultFlow.value = SearchResult.Empty()
@@ -426,6 +463,11 @@ class HuanmengWebDataSource : WebBookDataSource {
                 }
             }
         )
+
+        init {
+            // 初始化时自动加载第一页
+            loadMore()
+        }
 
         override fun loadMore() {
             if (loading) return
