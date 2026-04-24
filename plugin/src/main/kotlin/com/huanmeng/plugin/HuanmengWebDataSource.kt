@@ -41,7 +41,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 private const val BASE_URL = "https://www.huanmengacg.com/index.php/bookapi"
 private const val PASSWORD = "huanmengapi"
@@ -93,22 +95,19 @@ class HuanmengWebDataSource : WebBookDataSource {
                 "latest",
                 "ongoing",
                 "completed",
-                "tag_1", "tag_2", "tag_3", "tag_4", "tag_16",
-                "tag_17", "tag_26", "tag_34", "tag_46"
+                "tag_3", "tag_4", "tag_16",
+                "tag_17", "tag_26", "tag_46"
             )
 
             override val exploreTapPageDataSourceMap: Map<String, ExploreTapPageDataSource> = mapOf(
-                "latest"    to buildTapPage("🍑 最新更新", null, null),
-                "ongoing"   to buildTapPage("连载中", "state", "1"),
-                "completed" to buildTapPage("已完结", "state", "2"),
-                "tag_1"     to buildTapPage("校园", "tags", "1"),
-                "tag_2"     to buildTapPage("青春", "tags", "2"),
+                "latest"    to buildTapPage("最新", null, null),
+                "ongoing"   to buildTapPage("连载", "state", "1"),
+                "completed" to buildTapPage("完结", "state", "2"),
                 "tag_3"     to buildTapPage("恋爱", "tags", "3"),
                 "tag_4"     to buildTapPage("治愈", "tags", "4"),
                 "tag_16"    to buildTapPage("穿越", "tags", "16"),
                 "tag_17"    to buildTapPage("奇幻", "tags", "17"),
                 "tag_26"    to buildTapPage("悬疑", "tags", "26"),
-                "tag_34"    to buildTapPage("游戏", "tags", "34"),
                 "tag_46"    to buildTapPage("百合", "tags", "46")
             )
 
@@ -429,26 +428,22 @@ private fun HuanmengBookItem.toExploreDisplayBook(): ExploreDisplayBook =
         coverUri = Uri.parse(this.pic)
     )
 
+private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+
 private fun String.parseDateTime(): LocalDateTime {
     if (this.isBlank()) return LocalDateTime.MIN
     try {
-        val parts = this.trim().split(" ", "T")
-        val dateParts = parts.getOrNull(0)?.split("-") ?: return LocalDateTime.MIN
-        if (dateParts.size != 3) return LocalDateTime.MIN
-        val year = dateParts[0].toIntOrNull() ?: return LocalDateTime.MIN
-        val month = dateParts[1].toIntOrNull() ?: return LocalDateTime.MIN
-        val day = dateParts[2].toIntOrNull() ?: return LocalDateTime.MIN
-
-        var hour = 0
-        var minute = 0
-        var second = 0
-        if (parts.size > 1) {
-            val timeParts = parts[1].split(":")
-            hour = timeParts.getOrNull(0)?.toIntOrNull() ?: 0
-            minute = timeParts.getOrNull(1)?.toIntOrNull() ?: 0
-            second = timeParts.getOrNull(2)?.toIntOrNull() ?: 0
+        val trimmed = this.trim()
+        // 尝试 LocalDateTime.parse（ISO 格式 "2024-01-15T10:30:00"）
+        // 这是 LNR 宿主保留的方法，不会因 R8 被移除
+        val isoString = trimmed.replace(' ', 'T')
+        return try {
+            LocalDateTime.parse(isoString)
+        } catch (_: Exception) {
+            // 只有日期的情况（"2024-01-15"），用 LocalDate.parse + atStartOfDay
+            // 这也是 LNR 宿主 wenku8 插件使用的方式
+            LocalDate.parse(trimmed.split(" ", "T").first(), dateFormatter).atStartOfDay()
         }
-        return LocalDateTime.of(year, month, day, hour, minute, second)
     } catch (_: Exception) {
         return LocalDateTime.MIN
     }
