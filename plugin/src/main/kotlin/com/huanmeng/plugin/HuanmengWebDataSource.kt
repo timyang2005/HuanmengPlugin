@@ -14,7 +14,7 @@ import io.nightfish.lightnovelreader.api.book.BookInformation
 import io.nightfish.lightnovelreader.api.book.BookVolumes
 import io.nightfish.lightnovelreader.api.book.ChapterContent
 import io.nightfish.lightnovelreader.api.book.ChapterInformation
-import io.nightfish.lightnovelreader.api.book.MutableBookInformation
+import com.huanmeng.plugin.HuanmengBookInformation
 import io.nightfish.lightnovelreader.api.book.Volume
 import io.nightfish.lightnovelreader.api.book.WordCount
 import io.nightfish.lightnovelreader.api.content.builder.ContentBuilder
@@ -385,11 +385,11 @@ private fun HuanmengBookItem.toBookInformation(): BookInformation {
     val tagList = if (kind.isNotBlank()) {
         kind.split(",", "，", " ").filter { it.isNotBlank() }
     } else emptyList()
-    return MutableBookInformation(
+    return HuanmengBookInformation(
         id = this@toBookInformation.id.toString(),
         title = name,
         subtitle = "",
-        coverUrl = Uri.parse(pic),
+        coverUri = Uri.parse(pic),
         author = this@toBookInformation.author,
         description = intro,
         tags = tagList,
@@ -406,11 +406,11 @@ private fun HuanmengBookDetail.toBookInformation(): BookInformation {
         if (kind.isNotBlank()) addAll(kind.split(",", "，", " ").filter { it.isNotBlank() })
         if (detailTags.isNotBlank()) addAll(detailTags.split(",", "，", " ").filter { it.isNotBlank() })
     }.distinct()
-    return MutableBookInformation(
+    return HuanmengBookInformation(
         id = this@toBookInformation.id.toString(),
         title = name,
         subtitle = "",
-        coverUrl = Uri.parse(pic),
+        coverUri = Uri.parse(pic),
         author = this@toBookInformation.author,
         description = intro,
         tags = allTags,
