@@ -46,7 +46,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 private const val BASE_URL = "https://www.huanmengacg.com/index.php/bookapi"
-private const val PASSWORD = "huanmengapi"
+private const val PASSWORD = "huanmengbookapi"
 private const val UA =
     "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
 
@@ -114,16 +114,28 @@ class HuanmengWebDataSource : WebBookDataSource {
                 "latest_exp"    to buildExpandedPage("最新更新", null, null),
                 "ongoing_exp"   to buildExpandedPage("连载中", "state", "1"),
                 "completed_exp" to buildExpandedPage("已完结", "state", "2"),
-                // 9个分类的展开页
+                // 18个分类的展开页
                 "campus_exp"    to buildExpandedPage("校园", "tags", "1"),
                 "youth_exp"     to buildExpandedPage("青春", "tags", "2"),
                 "romance_exp"   to buildExpandedPage("恋爱", "tags", "3"),
                 "healing_exp"   to buildExpandedPage("治愈", "tags", "4"),
+                "ensemble_exp"  to buildExpandedPage("群像", "tags", "5"),
+                "sports_exp"    to buildExpandedPage("竞技", "tags", "6"),
+                "comedy_exp"    to buildExpandedPage("搞笑", "tags", "7"),
+                "daily_exp"     to buildExpandedPage("日常", "tags", "8"),
+                "scifi_exp"     to buildExpandedPage("科幻", "tags", "9"),
+                "purelove_exp"  to buildExpandedPage("纯爱", "tags", "10"),
+                "dark_exp"      to buildExpandedPage("暗黑", "tags", "11"),
+                "tearjerker_exp" to buildExpandedPage("催泪", "tags", "12"),
+                "infinite_exp"  to buildExpandedPage("无限", "tags", "13"),
                 "isekai_exp"    to buildExpandedPage("穿越", "tags", "16"),
                 "fantasy_exp"   to buildExpandedPage("奇幻", "tags", "17"),
                 "mystery_exp"   to buildExpandedPage("悬疑", "tags", "26"),
+                "lightnovel_exp" to buildExpandedPage("轻改", "tags", "35"),
                 "game_exp"      to buildExpandedPage("游戏", "tags", "34"),
-                "yuri_exp"      to buildExpandedPage("百合", "tags", "46")
+                "anotherworld_exp" to buildExpandedPage("异世界", "tags", "36"),
+                "yuri_exp"      to buildExpandedPage("百合", "tags", "46"),
+                "heroine_exp"   to buildExpandedPage("大女主", "tags", "47")
             )
         }
 
@@ -368,11 +380,23 @@ class HuanmengWebDataSource : WebBookDataSource {
             Triple("青春", "2", "youth_exp"),
             Triple("恋爱", "3", "romance_exp"),
             Triple("治愈", "4", "healing_exp"),
+            Triple("群像", "5", "ensemble_exp"),
+            Triple("竞技", "6", "sports_exp"),
+            Triple("搞笑", "7", "comedy_exp"),
+            Triple("日常", "8", "daily_exp"),
+            Triple("科幻", "9", "scifi_exp"),
+            Triple("纯爱", "10", "purelove_exp"),
+            Triple("暗黑", "11", "dark_exp"),
+            Triple("催泪", "12", "tearjerker_exp"),
+            Triple("无限", "13", "infinite_exp"),
             Triple("穿越", "16", "isekai_exp"),
             Triple("奇幻", "17", "fantasy_exp"),
             Triple("悬疑", "26", "mystery_exp"),
+            Triple("轻改", "35", "lightnovel_exp"),
             Triple("游戏", "34", "game_exp"),
-            Triple("百合", "46", "yuri_exp")
+            Triple("异世界", "36", "anotherworld_exp"),
+            Triple("百合", "46", "yuri_exp"),
+            Triple("大女主", "47", "heroine_exp")
         )
 
         override fun getRowsFlow(): Flow<List<ExploreBooksRow>> = flow {
