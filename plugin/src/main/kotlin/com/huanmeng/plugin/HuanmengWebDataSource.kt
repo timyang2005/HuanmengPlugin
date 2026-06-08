@@ -46,7 +46,7 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 private const val BASE_URL = "https://www.huanmengacg.com/index.php/bookapi"
-private const val PASSWORD = "huanmengbookapi"
+private const val PASSWORD = "chiyu666"
 private const val UA =
     "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36"
 
@@ -114,28 +114,39 @@ class HuanmengWebDataSource : WebBookDataSource {
                 "latest_exp"    to buildExpandedPage("最新更新", null, null),
                 "ongoing_exp"   to buildExpandedPage("连载中", "state", "1"),
                 "completed_exp" to buildExpandedPage("已完结", "state", "2"),
-                // 18个分类的展开页
-                "campus_exp"    to buildExpandedPage("校园", "tags", "1"),
-                "youth_exp"     to buildExpandedPage("青春", "tags", "2"),
-                "romance_exp"   to buildExpandedPage("恋爱", "tags", "3"),
-                "healing_exp"   to buildExpandedPage("治愈", "tags", "4"),
-                "ensemble_exp"  to buildExpandedPage("群像", "tags", "5"),
-                "sports_exp"    to buildExpandedPage("竞技", "tags", "6"),
-                "comedy_exp"    to buildExpandedPage("搞笑", "tags", "7"),
-                "daily_exp"     to buildExpandedPage("日常", "tags", "8"),
-                "scifi_exp"     to buildExpandedPage("科幻", "tags", "9"),
-                "purelove_exp"  to buildExpandedPage("纯爱", "tags", "10"),
-                "dark_exp"      to buildExpandedPage("暗黑", "tags", "11"),
-                "tearjerker_exp" to buildExpandedPage("催泪", "tags", "12"),
-                "infinite_exp"  to buildExpandedPage("无限", "tags", "13"),
-                "isekai_exp"    to buildExpandedPage("穿越", "tags", "16"),
-                "fantasy_exp"   to buildExpandedPage("奇幻", "tags", "17"),
-                "mystery_exp"   to buildExpandedPage("悬疑", "tags", "26"),
-                "lightnovel_exp" to buildExpandedPage("轻改", "tags", "35"),
-                "game_exp"      to buildExpandedPage("游戏", "tags", "34"),
-                "anotherworld_exp" to buildExpandedPage("异世界", "tags", "36"),
-                "yuri_exp"      to buildExpandedPage("百合", "tags", "46"),
-                "heroine_exp"   to buildExpandedPage("大女主", "tags", "47")
+                // 50个分类的展开页
+                "campus_exp"      to buildExpandedPage("校园", "tags", "1"),
+                "youth_exp"       to buildExpandedPage("青春", "tags", "2"),
+                "romance_exp"     to buildExpandedPage("恋爱", "tags", "3"),
+                "healing_exp"     to buildExpandedPage("治愈", "tags", "4"),
+                "ensemble_exp"    to buildExpandedPage("群像", "tags", "5"),
+                "sports_exp"      to buildExpandedPage("竞技", "tags", "6"),
+                "comedy_exp"      to buildExpandedPage("搞笑", "tags", "7"),
+                "daily_exp"       to buildExpandedPage("日常", "tags", "8"),
+                "scifi_exp"       to buildExpandedPage("科幻", "tags", "9"),
+                "purelove_exp"    to buildExpandedPage("纯爱", "tags", "10"),
+                "dark_exp"        to buildExpandedPage("暗黑", "tags", "11"),
+                "tearjerker_exp"  to buildExpandedPage("催泪", "tags", "12"),
+                "infinite_exp"    to buildExpandedPage("无限", "tags", "13"),
+                "horror_exp"      to buildExpandedPage("恐怖", "tags", "14"),
+                "isekai_exp"      to buildExpandedPage("穿越", "tags", "16"),
+                "fantasy_exp"     to buildExpandedPage("奇幻", "tags", "17"),
+                "magic_exp"       to buildExpandedPage("魔法", "tags", "18"),
+                "war_exp"         to buildExpandedPage("战争", "tags", "19"),
+                "battle_exp"      to buildExpandedPage("战斗", "tags", "20"),
+                "mystery_exp"     to buildExpandedPage("悬疑", "tags", "21"),
+                "game_exp"        to buildExpandedPage("游戏", "tags", "22"),
+                "apocalypse_exp"  to buildExpandedPage("末世", "tags", "23"),
+                "lightnovel_exp"  to buildExpandedPage("轻改", "tags", "35"),
+                "female_exp"      to buildExpandedPage("女频", "tags", "38"),
+                "jk_exp"          to buildExpandedPage("JK", "tags", "39"),
+                "jc_exp"          to buildExpandedPage("JC", "tags", "40"),
+                "loli_exp"        to buildExpandedPage("萝莉", "tags", "41"),
+                "reversal_exp"    to buildExpandedPage("反转", "tags", "42"),
+                "trap_exp"        to buildExpandedPage("伪娘", "tags", "43"),
+                "yuri_exp"        to buildExpandedPage("百合", "tags", "45"),
+                "ntr_exp"         to buildExpandedPage("NTR", "tags", "48"),
+                "harem_exp"       to buildExpandedPage("女频后宫", "tags", "49")
             )
         }
 
@@ -389,14 +400,25 @@ class HuanmengWebDataSource : WebBookDataSource {
             Triple("暗黑", "11", "dark_exp"),
             Triple("催泪", "12", "tearjerker_exp"),
             Triple("无限", "13", "infinite_exp"),
+            Triple("恐怖", "14", "horror_exp"),
             Triple("穿越", "16", "isekai_exp"),
             Triple("奇幻", "17", "fantasy_exp"),
-            Triple("悬疑", "26", "mystery_exp"),
+            Triple("魔法", "18", "magic_exp"),
+            Triple("战争", "19", "war_exp"),
+            Triple("战斗", "20", "battle_exp"),
+            Triple("悬疑", "21", "mystery_exp"),
+            Triple("游戏", "22", "game_exp"),
+            Triple("末世", "23", "apocalypse_exp"),
             Triple("轻改", "35", "lightnovel_exp"),
-            Triple("游戏", "34", "game_exp"),
-            Triple("异世界", "36", "anotherworld_exp"),
-            Triple("百合", "46", "yuri_exp"),
-            Triple("大女主", "47", "heroine_exp")
+            Triple("女频", "38", "female_exp"),
+            Triple("JK", "39", "jk_exp"),
+            Triple("JC", "40", "jc_exp"),
+            Triple("萝莉", "41", "loli_exp"),
+            Triple("反转", "42", "reversal_exp"),
+            Triple("伪娘", "43", "trap_exp"),
+            Triple("百合", "45", "yuri_exp"),
+            Triple("NTR", "48", "ntr_exp"),
+            Triple("女频后宫", "49", "harem_exp")
         )
 
         override fun getRowsFlow(): Flow<List<ExploreBooksRow>> = flow {

@@ -1,6 +1,6 @@
 # 幻梦轻小说 LNR 插件
 
-将「幻梦轻小说8.0 API书源」移植为 [LightNovelReader](https://github.com/dmzz-yyhyy/LightNovelReader) 插件。
+将「幻梦轻小说9.0 API书源」移植为 [LightNovelReader](https://github.com/dmzz-yyhyy/LightNovelReader) 插件。
 
 ## 功能
 
@@ -13,7 +13,7 @@
 ## 数据源
 
 - 站点：https://www.huanmengacg.com
-- API 密码：`huanmengbookapi`
+- API 密码：`chiyu666`
 
 ## 构建
 

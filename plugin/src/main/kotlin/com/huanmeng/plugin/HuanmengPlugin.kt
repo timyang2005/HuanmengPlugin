@@ -22,9 +22,9 @@ import io.nightfish.lightnovelreader.api.userdata.UserDataRepositoryApi
 /**
  * 幻梦轻小说 LNR 插件主类
  *
- * 对应书源：幻梦轻小说8.0 API版
+ * 对应书源：幻梦轻小说9.0 API版
  * 书源站点：https://www.huanmengacg.com
- * API密码：huanmengbookapi
+ * API密码：chiyu666
  */
 @Suppress("unused")
 @Plugin(
@@ -32,7 +32,7 @@ import io.nightfish.lightnovelreader.api.userdata.UserDataRepositoryApi
     name = "幻梦轻小说",
     versionName = BuildConfig.VERSION_NAME,
     author = "huanmengacg",
-    description = "幻梦轻小说全网最齐全的轻小说网，访问速度优质，网页内置插图，拥有海量的轻小说书籍。\n密码：huanmengbookapi\nTG交流群：https://t.me/huanmengnovel",
+    description = "幻梦轻小说全网最齐全的轻小说网，访问速度优质，网页内置插图，拥有海量的轻小说书籍。\n密码：chiyu666\nTG交流群：https://t.me/huanmengnovel",
     updateUrl = "https://github.com/dmzz-yyhyy/LightNovelReader-PluginRepository/blob/main/data/com.huanmeng.plugin/",
     apiVersion = 2
 )
